@@ -1,0 +1,23 @@
+{
+  "name": "promiz",
+  "version": "0.1.0",
+  "description": "An implementation of JavaScript promises from scratch",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farshidbeheshti/promiz.git"
+  },
+  "keywords": [
+    "promise",
+    "promisejs"
+  ],
+  "author": "Farshid Beheshti",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/farshidbeheshti/promiz/issues"
+  },
+  "homepage": "https://github.com/farshidbeheshti/promiz#readme"
+}
