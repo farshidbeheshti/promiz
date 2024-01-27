@@ -1,4 +1,6 @@
 import { isObject } from "./utils";
+import InternalSlots from "./internal-slots";
+import { PromiseReactionJob } from "./jobs";
 
 /* 27.2.1.3 */
 export function createResolvingFunctions(promise) {
@@ -21,7 +23,7 @@ export function createResolvingFunctions(promise) {
     }
 
     if (!isObject(resolution)) {
-      // TODO: Return FulfillPromise(promise, resolution)!
+      return fulfillPromise(promise, resolution);
     }
 
     let thenAction = null;
@@ -32,12 +34,12 @@ export function createResolvingFunctions(promise) {
     }
 
     if (typeof thenAction !== "function") {
-      // TODO: Return FulfillPromise(promise, resolution)!
+      return fulfillPromise(promise, resolution);
     }
     // So `thenAction` is callable and must wait until thenable resolves!
     const job = new PromiseResolveThenableJob(promise, resolution, thenAction);
     // See https://developer.mozilla.org/docs/Web/API/queueMicrotask!
-    queueMicrotask(job);
+    hostEnqueuePromiseJob(job);
   };
 
   resolve = { ...resolve, promise, alreadyResolved };
@@ -58,6 +60,34 @@ export function createResolvingFunctions(promise) {
     resolve,
     reject,
   };
+}
+
+/* 27.2.1.4 */
+export function fulfillPromise(promise, value) {
+  if (promise[InternalSlots.state] !== "pending") {
+    throw new Error("Promise is already settled.");
+  }
+  const reactions = promise[InternalSlots.fulfillReactions];
+
+  promise[InternalSlots.result] = value;
+  promise[InternalSlots.fulfillReactions] = undefined;
+  promise[InternalSlots.rejectReactions] = undefined;
+  promise[InternalSlots.state] = "fulfilled";
+
+  return triggerPromiseReactions(reactions, value);
+}
+
+export function triggerPromiseReactions(reactions, argument) {
+  for (const reaction of reactions) {
+    const job = new PromiseReactionJob(reaction, argument);
+    hostEnqueuePromiseJob(job);
+  }
+  return;
+}
+
+/* 27.2.1.8 */
+export function hostEnqueuePromiseJob(job) {
+  queueMicrotask(job);
 }
 
 // 25.6.2.2 NewPromiseResolveThenableJob ( promiseToResolve, thenable, then)
