@@ -19,7 +19,7 @@ export function createResolvingFunctions(promise) {
       const selfResolutionError = new TypeError(
         "must not resolve to the same promise."
       );
-      // TODO: Return RejectPromise(promise, selfResolutionError)!
+      return rejectPromise(promise, selfResolutionError);
     }
 
     if (!isObject(resolution)) {
@@ -30,7 +30,7 @@ export function createResolvingFunctions(promise) {
     try {
       thenAction = resolution.then;
     } catch (thenError) {
-      // TODO: Return RejectPromise(promise, then.[[Value]])!
+      rejectPromise(promise, thenError);
     }
 
     if (typeof thenAction !== "function") {
@@ -50,8 +50,7 @@ export function createResolvingFunctions(promise) {
       return;
     }
     alreadyResolved.value = true;
-
-    //TODO:  Return RejectPromise(promise, reason)!
+    return rejectPromise(promise, reason);
   };
 
   reject = { ...reject, promise, alreadyResolved };
@@ -75,6 +74,28 @@ export function fulfillPromise(promise, value) {
   promise[InternalSlots.state] = "fulfilled";
 
   return triggerPromiseReactions(reactions, value);
+}
+
+export function rejectPromise(promise, reason) {
+  if (promise[InternalSlots.state] !== "pending") {
+    throw new Error("Promise is already settled.");
+  }
+  const reactions = promise[InternalSlots.rejectReactions];
+
+  promise[InternalSlots.result] = reason;
+  promise[InternalSlots.fulfillReactions] = undefined;
+  promise[InternalSlots.rejectReactions] = undefined;
+  promise[InternalSlots.state] = "rejected";
+  if (promise[InternalSlots.isHandled] === false) {
+    hostPromiseRejectionTracker(promise, "reject");
+  }
+
+  return triggerPromiseReactions(reactions, reason);
+}
+
+export function hostPromiseRejectionTracker(promise, operation) {
+  const rejectionTracker = promise.constructor[InternalSlots.rejectionTracker];
+  rejectionTracker.track(promise, operation);
 }
 
 export function triggerPromiseReactions(reactions, argument) {
