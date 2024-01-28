@@ -1,4 +1,4 @@
-import { NormalCompletion, ThrowCompletion } from "./utils";
+import { NormalCompletion, ThrowCompletion } from "../utils";
 export class PromiseReactionJob {
   constructor(reaction, argument) {
     return () => {
