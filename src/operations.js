@@ -111,6 +111,48 @@ export function hostEnqueuePromiseJob(job) {
   queueMicrotask(job);
 }
 
+/* 27.2.1.6: IsPromise(x) */
+export function isPromise(x) {
+  return isObject(x) && x[InternalSlots.state];
+}
+
+/*
+  27.2.1.5: NewPromiseCapability (C).
+  Seems to be better being a class instead of a function although there is no
+  any props belong to the class at all. For now, defined as a function for
+  completeness with spec.
+*/
+export function PromiseCapability(C) {
+  if (typeof new.target === "undefined") {
+    throw new Error(
+      " You must use `new` to call PromiseCapability constructor!"
+    );
+  }
+
+  const executor = (resolve, reject) => {
+    this.resolve = resolve;
+    this.reject = reject;
+  };
+  executor.capability = this;
+
+  this.promise = new C(executor);
+
+  if (typeof this.resolve !== "function") {
+    throw new TypeError("resolve is not callable.");
+  }
+  if (typeof this.reject !== "function") {
+    throw new TypeError("reject is not callable.");
+  }
+}
+
+export class PromiseReaction {
+  constructor(capability, type, handler) {
+    this.capability = capability;
+    this.type = type;
+    this.handler = handler;
+  }
+}
+
 // 25.6.2.2 NewPromiseResolveThenableJob ( promiseToResolve, thenable, then)
 export class PromiseResolveThenableJob {
   constructor(promiseToResolve, thenable, then) {
