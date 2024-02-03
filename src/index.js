@@ -1,4 +1,3 @@
-import InternalSlots from "./internal-slots";
 import { PromiseReactionJob } from "./jobs";
 import {
   PromiseCapability,
@@ -8,6 +7,7 @@ import {
   hostPromiseRejectionTracker,
   isPromise,
 } from "./operations";
+import { NotImplementedError } from "./utils";
 
 export default class Promiz {
   constructor(executor) {
@@ -42,6 +42,60 @@ export default class Promiz {
     const resultCapability = new PromiseCapability(C);
     return performPromiseThen(this, onFulfilled, onRejected, resultCapability);
   }
+  /* eslint-disable no-unused-vars */
+  catch(onRejected) {
+    throw new NotImplementedError(
+      "`catch` function is not implemented yet :\\"
+    );
+  }
+  finally(onFinally) {
+    throw new NotImplementedError(
+      "`funally` function is not implemented yet :\\"
+    );
+  }
+
+  static onUnhandledRejection(event) {
+    throw new NotImplementedError(
+      "`onUnhandledRejection` event is not implemented yet :\\"
+    );
+  }
+
+  static onRejectionHandled(event) {
+    throw new NotImplementedError(
+      "`onRejectionHandled` event is not implemented yet :\\"
+    );
+  }
+
+  static any(iterable) {
+    throw new NotImplementedError("`any` function is not implemented yet :\\");
+  }
+
+  static race(iterable) {
+    throw new NotImplementedError("`race` function is not implemented yet :\\");
+  }
+
+  static all(iterable) {
+    throw new NotImplementedError("`all` function is not implemented yet :\\");
+  }
+
+  static allSettled(iterable) {
+    throw new NotImplementedError(
+      "`allSettled` function is not implemented yet :\\"
+    );
+  }
+
+  static resolve(x) {
+    throw new NotImplementedError(
+      "`resolve` function is not implemented yet :\\"
+    );
+  }
+
+  static reject(r) {
+    throw new NotImplementedError(
+      "`reject` function is not implemented yet :\\"
+    );
+  }
+  /* eslint-enable no-unused-vars */
 }
 
 /* 27.2.5.4 */

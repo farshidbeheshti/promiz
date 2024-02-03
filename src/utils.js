@@ -24,3 +24,11 @@ export class ThrowCompletion extends Completion {
     super("throw", argument);
   }
 }
+
+export class NotImplementedError extends Error {
+  constructor(message = "") {
+    super(message);
+    this.name = "NotImplementedError";
+    this.message = message;
+  }
+}
