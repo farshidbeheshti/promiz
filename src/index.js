@@ -8,7 +8,7 @@ import {
   hostPromiseRejectionTracker,
   isPromise,
 } from "./operations";
-import { NotImplementedError } from "./utils";
+import { NotImplementedError, isObject } from "./utils";
 
 export default class Promiz {
   constructor(executor) {
@@ -48,13 +48,37 @@ export default class Promiz {
     return this.then(null, onRejected);
   }
 
-  /* eslint-disable no-unused-vars */
   finally(onFinally) {
-    throw new NotImplementedError(
-      "`funally` function is not implemented yet :\\"
-    );
+    if (!isPromise(this)) {
+      throw new TypeError("Value is not an instance of Promise.");
+    }
+    const C = this.constructor[Symbol.species];
+    let thenFinally, catchFinally;
+    if (typeof onFinally !== "function") {
+      thenFinally = catchFinally = onFinally;
+    } else {
+      thenFinally = (value) => {
+        const result = onFinally.apply(undefined);
+        const promise = promiseResolve(C, result);
+        const valueThunk = () => value;
+        return promise.then(valueThunk);
+      };
+      catchFinally = (reason) => {
+        const result = onFinally.apply(undefined);
+        const promise = promiseResolve(C, result);
+        const thrower = () => {
+          throw reason;
+        };
+        return promise.then(thrower);
+      };
+      thenFinally.C = catchFinally.C = C;
+      thenFinally.onFinally = catchFinally.onFinally = onFinally;
+    }
+
+    return this.then(thenFinally, catchFinally);
   }
 
+  /* eslint-disable no-unused-vars */
   static onUnhandledRejection(event) {
     throw new NotImplementedError(
       "`onUnhandledRejection` event is not implemented yet :\\"
@@ -160,4 +184,17 @@ function performPromiseThen(
   Promise[InternalSlots.isHandled] = true;
 
   return resultCapability?.promise || undefined;
+}
+
+/* 27.2.4.7.1 */
+function promiseResolve(C, x) {
+  if (isPromise(x)) {
+    const xConstructor = x.constructor;
+    if (Object.is(xConstructor, C)) {
+      return x;
+    }
+  }
+  const promiseCapability = new PromiseCapability(C);
+  promiseCapability.resolve(x);
+  return promiseCapability.promise;
 }
