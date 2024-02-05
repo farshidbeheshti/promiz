@@ -1,3 +1,4 @@
+import InternalSlots from "./internal-slots";
 import { PromiseReactionJob } from "./jobs";
 import {
   PromiseCapability,
