@@ -43,12 +43,12 @@ export default class Promiz {
     const resultCapability = new PromiseCapability(C);
     return performPromiseThen(this, onFulfilled, onRejected, resultCapability);
   }
-  /* eslint-disable no-unused-vars */
+
   catch(onRejected) {
-    throw new NotImplementedError(
-      "`catch` function is not implemented yet :\\"
-    );
+    return this.then(null, onRejected);
   }
+
+  /* eslint-disable no-unused-vars */
   finally(onFinally) {
     throw new NotImplementedError(
       "`funally` function is not implemented yet :\\"
