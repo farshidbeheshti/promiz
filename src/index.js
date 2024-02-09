@@ -78,19 +78,26 @@ export default class Promiz {
     return this.then(thenFinally, catchFinally);
   }
 
+  /* 27.2.4.6 */
+  static reject(r) {
+    const C = this;
+    const capability = new PromiseCapability(C);
+    capability.reject(r);
+
+    return capability.promise;
+  }
+
+  /* 27.2.4.7 */
+  static resolve(x) {
+    const C = this;
+    if (!isObject(C)) {
+      throw new TypeError("Call resolve() in context of an object!");
+    }
+
+    return promiseResolve(C, x);
+  }
+
   /* eslint-disable no-unused-vars */
-  static onUnhandledRejection(event) {
-    throw new NotImplementedError(
-      "`onUnhandledRejection` event is not implemented yet :\\"
-    );
-  }
-
-  static onRejectionHandled(event) {
-    throw new NotImplementedError(
-      "`onRejectionHandled` event is not implemented yet :\\"
-    );
-  }
-
   static any(iterable) {
     throw new NotImplementedError("`any` function is not implemented yet :\\");
   }
@@ -109,17 +116,18 @@ export default class Promiz {
     );
   }
 
-  static resolve(x) {
+  static onUnhandledRejection(event) {
     throw new NotImplementedError(
-      "`resolve` function is not implemented yet :\\"
+      "`onUnhandledRejection` event is not implemented yet :\\"
     );
   }
 
-  static reject(r) {
+  static onRejectionHandled(event) {
     throw new NotImplementedError(
-      "`reject` function is not implemented yet :\\"
+      "`onRejectionHandled` event is not implemented yet :\\"
     );
   }
+
   /* eslint-enable no-unused-vars */
 }
 
