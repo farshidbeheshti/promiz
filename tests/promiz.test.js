@@ -13,5 +13,15 @@ describe("Promiz", () => {
         new TypeError("Executor is not a function.")
       );
     });
+
+    it("must fulfill a promiz instance if the executor call resolve function", () => {
+      const aValue = 1234;
+      const promiz = new Promiz((resolve) => {
+        resolve(aValue);
+      });
+
+      expect(promiz[InternalSlots.state]).toEqual("fulfilled");
+      expect(promiz[InternalSlots.result]).toEqual(aValue);
+    });
   });
 });

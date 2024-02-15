@@ -38,11 +38,12 @@ export function createResolvingFunctions(promise) {
     }
     // So `thenAction` is callable and must wait until thenable resolves!
     const job = new PromiseResolveThenableJob(promise, resolution, thenAction);
-    // See https://developer.mozilla.org/docs/Web/API/queueMicrotask!
+
     hostEnqueuePromiseJob(job);
   };
 
-  resolve = { ...resolve, promise, alreadyResolved };
+  resolve.promise = promise;
+  resolve.alreadyResolved = alreadyResolved;
 
   let reject = (reason) => {
     // just return if the promise is already resolved!
@@ -53,7 +54,8 @@ export function createResolvingFunctions(promise) {
     return rejectPromise(promise, reason);
   };
 
-  reject = { ...reject, promise, alreadyResolved };
+  reject.promise = promise;
+  reject.alreadyResolved = alreadyResolved;
 
   return {
     resolve,
@@ -108,6 +110,7 @@ export function triggerPromiseReactions(reactions, argument) {
 
 /* 27.2.1.8 */
 export function hostEnqueuePromiseJob(job) {
+  // See https://developer.mozilla.org/docs/Web/API/queueMicrotask!
   queueMicrotask(job);
 }
 
