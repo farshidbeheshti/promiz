@@ -3,18 +3,18 @@ import InternalSlots from "../src/internal-slots";
 
 describe("Promiz", () => {
   describe("Promiz constructor", () => {
-    it("must throw an exception if the executor is missing", () => {
+    it("should throw an exception if the executor is missing", () => {
       expect(() => new Promiz()).toThrow(
         new TypeError("Executor is undefined.")
       );
     });
-    it("must throw an exception if the executor is not a function", () => {
+    it("should throw an exception if the executor is not a function", () => {
       expect(() => new Promiz(true)).toThrow(
         new TypeError("Executor is not a function.")
       );
     });
 
-    it("must fulfill a promiz instance if the executor call resolve function", () => {
+    it("should fulfill a promiz instance if the executor call resolve function", () => {
       const aValue = 1234;
       const promiz = new Promiz((resolve) => {
         resolve(aValue);
@@ -22,6 +22,52 @@ describe("Promiz", () => {
 
       expect(promiz[InternalSlots.state]).toEqual("fulfilled");
       expect(promiz[InternalSlots.result]).toEqual(aValue);
+    });
+  });
+
+  describe("Promiz.prototype.then()", () => {
+    it("should run handler if it's called with an argument in fulfilled state", (done) => {
+      const promiz = new Promiz((resolve) => {
+        resolve(42);
+      });
+      done();
+      const result = promiz.then((value) => {
+        expect(value).toEqual(42);
+        done();
+      });
+
+      expect(result).toBeInstanceOf(Promiz);
+      expect(result[InternalSlots.state]).toEqual("pending");
+    });
+
+    it("should run handler if it's called with an argument in pending state", (done) => {
+      const promiz = new Promiz((resolve) => {
+        setTimeout(() => {
+          resolve(42);
+        }, 100);
+      });
+
+      const result = promiz.then((value) => {
+        expect(value).toEqual(42);
+        done();
+      });
+
+      expect(result).toBeInstanceOf(Promiz);
+      expect(result[InternalSlots.state]).toEqual("pending");
+    });
+
+    it("should run handler if it's called with an argument in rejected state", (done) => {
+      const promiz = new Promiz((_, reject) => {
+        reject(42);
+      });
+
+      const result = promiz.then(undefined, (value) => {
+        expect(value).toEqual(42);
+        done();
+      });
+
+      expect(result).toBeInstanceOf(Promiz);
+      expect(result[InternalSlots.state]).toEqual("pending");
     });
   });
 });
