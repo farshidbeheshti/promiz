@@ -70,4 +70,19 @@ describe("Promiz", () => {
       expect(result[InternalSlots.state]).toEqual("pending");
     });
   });
+
+  describe("Promiz.prototype.any()", () => {
+    it("should return `42` as the first value", (done) => {
+      const promiz = Promiz.any([
+        Promiz.resolve(42),
+        Promiz.resolve(43),
+        Promiz.resolve(44),
+      ]);
+
+      promiz.then((value) => {
+        expect(value).toEqual(42);
+        done();
+      });
+    });
+  });
 });
