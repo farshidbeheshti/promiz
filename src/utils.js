@@ -32,3 +32,10 @@ export class NotImplementedError extends Error {
     this.message = message;
   }
 }
+
+/* 7.2.4 IsConstructor(argument) */
+export function isConstructor(argument) {
+  return (
+    typeof argument === "function" && typeof argument.prototype !== "undefined"
+  );
+}

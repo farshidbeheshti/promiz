@@ -8,7 +8,13 @@ import {
   hostPromiseRejectionTracker,
   isPromise,
 } from "./operations";
-import { NotImplementedError, isObject } from "./utils";
+import {
+  NormalCompletion,
+  NotImplementedError,
+  ThrowCompletion,
+  isConstructor,
+  isObject,
+} from "./utils";
 
 export default class Promiz {
   constructor(executor) {
@@ -97,11 +103,34 @@ export default class Promiz {
     return promiseResolve(C, x);
   }
 
-  /* eslint-disable no-unused-vars */
+  /* 27.2.4.3 Promise.any(iterable) */
   static any(iterable) {
-    throw new NotImplementedError("`any` function is not implemented yet :\\");
-  }
+    const C = this;
+    const promiseCapability = new PromiseCapability(C);
+    let iteratorRecord;
 
+    try {
+      const promiseResolve = getPromiseResolve(C);
+      iteratorRecord = getIterator(iterable);
+      const result = performPromiseAny(
+        iteratorRecord,
+        C,
+        promiseCapability,
+        promiseResolve
+      );
+      return result;
+    } catch (error) {
+      let result = new ThrowCompletion(error);
+
+      if (iteratorRecord && iteratorRecord.done === false) {
+        result = iteratorClose(iteratorRecord, result);
+      }
+
+      promiseCapability.reject(result.value);
+      return promiseCapability.promise;
+    }
+  }
+  /* eslint-disable no-unused-vars */
   static race(iterable) {
     throw new NotImplementedError("`race` function is not implemented yet :\\");
   }
@@ -205,4 +234,75 @@ function promiseResolve(C, x) {
   const promiseCapability = new PromiseCapability(C);
   promiseCapability.resolve(x);
   return promiseCapability.promise;
+}
+
+/* 7.3.10 GetMethod(V, P) */
+function getMethod(V, P) {
+  if (!(P in V)) {
+    return new ThrowCompletion(new TypeError("Property not found."));
+  }
+  const func = V[P];
+  if (func === undefined || func === null) {
+    return new NormalCompletion(undefined);
+  }
+  if (typeof func !== "function") {
+    return new ThrowCompletion(new TypeError("`func` is not a method."));
+  }
+  return new NormalCompletion(func);
+}
+
+/* 7.4.2 GetIteratorFromMethod(obj,method) */
+export function getIteratorFromMethod(obj, method) {
+  const iterator = method.call(obj);
+  if (!isObject(iterator)) {
+    throw new TypeError("Iteartor should be an object");
+  }
+  const nextMethod = iterator.next;
+  const iteratorRecord = {
+    iterator,
+    nextMethod,
+    done: false,
+  };
+  return iteratorRecord;
+}
+
+/* 7.4.3 GetIterator(obj, kind) */
+export function getIterator(obj, kind) {
+  kind = kind || "sync";
+  if (kind !== "sync" && kind !== "async") {
+    throw new TypeError("Invalid kind. It could be either 'sync' or 'async'");
+  }
+  let method = getMethod(obj);
+  if (kind === "async") {
+    if (method === undefined) {
+      method = obj[Symbol.asyncIterator];
+      if (method === undefined) {
+        const syncMethod = obj[Symbol.iterator];
+        const syncIteratorRecord = getIteratorFromMethod(obj, syncMethod);
+
+        return syncIteratorRecord;
+      }
+    } else {
+      method = obj[Symbol.iterator];
+    }
+  }
+
+  if (method === undefined) {
+    throw new TypeError("Invalid method. method should not be undefined.");
+  }
+
+  return getIteratorFromMethod(obj, method);
+}
+
+function getPromiseResolve(promiseConstructor) {
+  if (!isConstructor(promiseConstructor)) {
+    throw new TypeError("Value must be a constructor.");
+  }
+  const promiseResolve = promiseConstructor.resolve;
+
+  if (typeof promiseResolve !== "function") {
+    throw new TypeError("resolve is not callable.");
+  }
+
+  return promiseResolve;
 }
