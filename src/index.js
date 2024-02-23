@@ -14,6 +14,10 @@ import {
   ThrowCompletion,
   isConstructor,
   isObject,
+  PromiseAggregateError,
+  iteratorStep,
+  iteratorValue,
+  iteratorClose,
 } from "./utils";
 
 export default class Promiz {
@@ -130,11 +134,36 @@ export default class Promiz {
       return promiseCapability.promise;
     }
   }
-  /* eslint-disable no-unused-vars */
+
+  /* 27.2.4.5 Promise.race(iterable) */
   static race(iterable) {
-    throw new NotImplementedError("`race` function is not implemented yet :\\");
+    const C = this;
+    const PromiseCapability = new PromiseCapability(C);
+    let iteratorRecord;
+
+    try {
+      const PromiseResolve = getPromiseResolve(C);
+      iteratorRecord = getIterator(iterable);
+      const result = performPromiseRace(
+        iteratorRecord,
+        C,
+        PromiseCapability,
+        PromiseResolve
+      );
+      return result;
+    } catch (error) {
+      let result = new ThrowCompletion(error);
+
+      if (iteratorRecord && iteratorRecord.done === false) {
+        result = iteratorClose(iteratorRecord, result);
+      }
+
+      PromiseCapability.reject(result.value);
+      return PromiseCapability.Promise;
+    }
   }
 
+  /* eslint-disable no-unused-vars */
   static all(iterable) {
     throw new NotImplementedError("`all` function is not implemented yet :\\");
   }
@@ -221,6 +250,85 @@ function performPromiseThen(
   Promise[InternalSlots.isHandled] = true;
 
   return resultCapability?.promise || undefined;
+}
+
+/* 27.2.4.5.1 */
+function performPromiseRace(
+  iteratorRecord,
+  constructor,
+  resultCapability,
+  promiseResolve
+) {
+  if (!isConstructor(constructor)) {
+    throw new TypeError("Value must be a constructor.");
+  }
+
+  if (typeof promiseResolve !== "function") {
+    throw new TypeError("resolve is not callable.");
+  }
+
+  /* eslint-disable-next-line no-constant-condition */
+  while (true) {
+    let next;
+
+    try {
+      next = iteratorStep(iteratorRecord);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    if (next === false) {
+      iteratorRecord.done = true;
+      return resultCapability.promise;
+    }
+
+    let nextValue;
+
+    try {
+      nextValue = iteratorValue(next);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    const nextPromise = promiseResolve.call(constructor, nextValue);
+    nextPromise.then(resultCapability.resolve, resultCapability.reject);
+  }
+}
+
+function createPromiseAnyRejectElement(
+  index,
+  errors,
+  promiseCapability,
+  remainingElementsCount
+) {
+  const alreadyCalled = { value: false };
+
+  return (x) => {
+    if (alreadyCalled.value) {
+      return;
+    }
+
+    alreadyCalled.value = true;
+
+    errors[index] = x;
+    remainingElementsCount.value = remainingElementsCount.value - 1;
+
+    if (remainingElementsCount.value === 0) {
+      const error = new PromiseAggregateError();
+      Object.defineProperty(error, "errors", {
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value: errors,
+      });
+
+      return promiseCapability.reject(error);
+    }
+  };
 }
 
 /* 27.2.4.7.1 */
