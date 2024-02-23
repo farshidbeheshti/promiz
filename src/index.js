@@ -252,6 +252,79 @@ function performPromiseThen(
   return resultCapability?.promise || undefined;
 }
 
+/* 27.2.4.3.1 */
+function performPromiseAny(
+  iteratorRecord,
+  constructor,
+  resultCapability,
+  promiseResolve
+) {
+  if (!isConstructor(constructor)) {
+    throw new TypeError("Value must be a constructor.");
+  }
+
+  if (typeof promiseResolve !== "function") {
+    throw new TypeError("resolve is not callable.");
+  }
+
+  const errors = [];
+  const remainingElementsCount = { value: 1 };
+  let index = 0;
+
+  /* eslint-disable-next-line no-constant-condition */
+  while (true) {
+    let next;
+
+    try {
+      next = iteratorStep(iteratorRecord);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    if (next === false) {
+      remainingElementsCount.value = remainingElementsCount.value - 1;
+      if (remainingElementsCount.value === 0) {
+        const error = new PromiseAggregateError();
+        Object.defineProperty(error, "errors", {
+          configurable: true,
+          enumerable: false,
+          writable: true,
+          value: errors,
+        });
+
+        resultCapability.reject(error);
+      }
+
+      return resultCapability.promise;
+    }
+
+    let nextValue;
+
+    try {
+      nextValue = iteratorValue(next);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    errors.push(undefined);
+    const nextPromise = promiseResolve.call(constructor, nextValue);
+    const rejectElement = createPromiseAnyRejectElement(
+      index,
+      errors,
+      resultCapability,
+      remainingElementsCount
+    );
+
+    remainingElementsCount.value = remainingElementsCount.value + 1;
+    nextPromise.then(resultCapability.resolve, rejectElement);
+    index = index + 1;
+  }
+}
+
 /* 27.2.4.5.1 */
 function performPromiseRace(
   iteratorRecord,
