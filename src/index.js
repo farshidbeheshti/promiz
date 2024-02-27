@@ -163,11 +163,32 @@ export default class Promiz {
     }
   }
 
-  /* eslint-disable no-unused-vars */
   static all(iterable) {
-    throw new NotImplementedError("`all` function is not implemented yet :\\");
+    const C = this;
+    const promiseCapability = new PromiseCapability(C);
+    let iteratorRecord;
+
+    try {
+      const promiseResolve = getPromiseResolve(C);
+      iteratorRecord = getIterator(iterable);
+      const result = performPromiseAll(
+        iteratorRecord,
+        C,
+        promiseCapability,
+        promiseResolve
+      );
+      return result;
+    } catch (error) {
+      let result = new ThrowCompletion(error);
+      if (iteratorRecord && iteratorRecord.done === false) {
+        result = iteratorClose(iteratorRecord, result);
+      }
+      promiseCapability.reject(result.value);
+      return promiseCapability.promise;
+    }
   }
 
+  /* eslint-disable no-unused-vars */
   static allSettled(iterable) {
     throw new NotImplementedError(
       "`allSettled` function is not implemented yet :\\"
@@ -372,6 +393,70 @@ function performPromiseRace(
   }
 }
 
+function performPromiseAll(
+  iteratorRecord,
+  constructor,
+  resultCapability,
+  promiseResolve
+) {
+  if (!isConstructor(constructor)) {
+    throw new TypeError("Value must be a constructor.");
+  }
+
+  if (typeof promiseResolve !== "function") {
+    throw new TypeError("resolve is not callable.");
+  }
+
+  const values = [];
+  const remainingElementsCount = { value: 1 };
+  let index = 0;
+
+  /* eslint-disable-next-line no-constant-condition */
+  while (true) {
+    let next;
+
+    try {
+      next = iteratorStep(iteratorRecord);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    if (next === false) {
+      remainingElementsCount.value = remainingElementsCount.value - 1;
+      if (remainingElementsCount.value === 0) {
+        resultCapability.resolve(values);
+      }
+
+      return resultCapability.promise;
+    }
+
+    let nextValue;
+
+    try {
+      nextValue = iteratorValue(next);
+    } catch (error) {
+      iteratorRecord.done = true;
+      resultCapability.reject(error);
+      return resultCapability.promise;
+    }
+
+    values.push(undefined);
+    const nextPromise = promiseResolve.call(constructor, nextValue);
+    const resolveElement = createPromiseAllResolveElement(
+      index,
+      values,
+      resultCapability,
+      remainingElementsCount
+    );
+
+    remainingElementsCount.value = remainingElementsCount.value + 1;
+    nextPromise.then(resolveElement, resultCapability.reject);
+    index = index + 1;
+  }
+}
+
 function createPromiseAnyRejectElement(
   index,
   errors,
@@ -400,6 +485,30 @@ function createPromiseAnyRejectElement(
       });
 
       return promiseCapability.reject(error);
+    }
+  };
+}
+
+function createPromiseAllResolveElement(
+  index,
+  values,
+  promiseCapability,
+  remainingElementsCount
+) {
+  const alreadyCalled = { value: false };
+
+  return (x) => {
+    if (alreadyCalled.value) {
+      return;
+    }
+
+    alreadyCalled.value = true;
+
+    values[index] = x;
+    remainingElementsCount.value = remainingElementsCount.value - 1;
+
+    if (remainingElementsCount.value === 0) {
+      return promiseCapability.resolve(values);
     }
   };
 }
