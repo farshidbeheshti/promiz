@@ -92,13 +92,13 @@ describe("Promiz", () => {
         }, 1000);
       });
 
-      const promise = Promiz.any([
+      const promiz = Promiz.any([
         promizDelayed,
         Promiz.reject(43),
         Promiz.resolve(42),
       ]);
 
-      Promiz.then((value) => {
+      promiz.then((value) => {
         expect(value).toEqual(42);
         done();
       });
@@ -133,7 +133,7 @@ describe("Promiz", () => {
         Promiz.reject(44),
       ]);
 
-      Promiz.catch((reason) => {
+      promiz.catch((reason) => {
         expect(reason).toEqual(42);
         done();
       });
@@ -146,7 +146,7 @@ describe("Promiz", () => {
         Promiz.resolve(44),
       ]);
 
-      Promiz.catch((reason) => {
+      promiz.catch((reason) => {
         expect(reason).toEqual(43);
         done();
       });
