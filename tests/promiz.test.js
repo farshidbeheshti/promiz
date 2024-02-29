@@ -71,7 +71,7 @@ describe("Promiz", () => {
     });
   });
 
-  describe("Promiz.prototype.any()", () => {
+  describe("Promiz.any()", () => {
     it("should return `42` as the first value", (done) => {
       const promiz = Promiz.any([
         Promiz.resolve(42),
@@ -80,6 +80,25 @@ describe("Promiz", () => {
       ]);
 
       promiz.then((value) => {
+        expect(value).toEqual(42);
+        done();
+      });
+    });
+
+    it("should return the third promiz value since it is resolved first", (done) => {
+      const promizDelayed = new Promiz((resolve) => {
+        setTimeout(() => {
+          resolve(44);
+        }, 1000);
+      });
+
+      const promise = Promiz.any([
+        promizDelayed,
+        Promiz.reject(43),
+        Promiz.resolve(42),
+      ]);
+
+      promise.then((value) => {
         expect(value).toEqual(42);
         done();
       });
