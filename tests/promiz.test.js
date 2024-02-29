@@ -152,4 +152,51 @@ describe("Promiz", () => {
       });
     });
   });
+
+  describe("Promiz.allSettled()", () => {
+    it("should throw an error when there is not a constructor passed to the all() method.allSettled()", () => {
+      expect(() => {
+        Promiz.allSettled.call({}, []);
+      }).toThrow();
+    });
+
+    it("should reject a promiz when a promiz already thrown an exception", (done) => {
+      const iterable = {
+        [Symbol.iterator]() {
+          throw new Error("Thrown exception");
+        },
+      };
+
+      const promiz = Promiz.allSettled(iterable);
+      promiz.catch((error) => {
+        expect(error.message).toEqual("Thrown exception");
+        done();
+      });
+    });
+    it("should return all rejected values", (done) => {
+      const promiz = Promiz.allSettled([
+        Promiz.reject(42),
+        Promiz.reject(43),
+        Promiz.reject(44),
+      ]);
+
+      promiz.then((reason) => {
+        expect(reason).toEqual([
+          {
+            status: "rejected",
+            value: 42,
+          },
+          {
+            status: "rejected",
+            value: 43,
+          },
+          {
+            status: "rejected",
+            value: 44,
+          },
+        ]);
+        done();
+      });
+    });
+  });
 });
