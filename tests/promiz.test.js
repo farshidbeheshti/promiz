@@ -98,8 +98,56 @@ describe("Promiz", () => {
         Promiz.resolve(42),
       ]);
 
-      promise.then((value) => {
+      Promiz.then((value) => {
         expect(value).toEqual(42);
+        done();
+      });
+    });
+  });
+
+  describe("Promiz.all()", () => {
+    it("should throw an error when there is not a constructor passed to the all() method.", () => {
+      expect(() => {
+        Promiz.all.call({}, []);
+      }).toThrow();
+    });
+
+    it("should reject a promiz when a promiz already thrown an exception", (done) => {
+      const iterable = {
+        [Symbol.iterator]() {
+          throw new Error("Thrown exception");
+        },
+      };
+
+      const promiz = Promiz.all(iterable);
+      promiz.catch((error) => {
+        expect(error.message).toEqual("Thrown exception");
+        done();
+      });
+    });
+
+    it("should return `42` as the first value that was rejected", (done) => {
+      const promiz = Promiz.all([
+        Promiz.reject(42),
+        Promiz.reject(43),
+        Promiz.reject(44),
+      ]);
+
+      Promiz.catch((reason) => {
+        expect(reason).toEqual(42);
+        done();
+      });
+    });
+
+    it("should return `43` as the second value since rejected when it is resolved first", (done) => {
+      const promiz = Promiz.all([
+        Promiz.resolve(42),
+        Promiz.reject(43),
+        Promiz.resolve(44),
+      ]);
+
+      Promiz.catch((reason) => {
+        expect(reason).toEqual(43);
         done();
       });
     });
