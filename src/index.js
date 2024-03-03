@@ -41,6 +41,10 @@ export default class Promiz {
     }
   }
 
+  static get [Symbol.species]() {
+    return this;
+  }
+
   /* 25.6.5.4 of the spec */
   then(onFulfilled, onRejected) {
     if (!isPromise(this)) {
