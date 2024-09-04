@@ -20,19 +20,22 @@ import {
   iteratorClose,
 } from "./utils";
 
+/* 27.2.3.1 - Promise Constructor*/
 export default class Promiz {
   constructor(executor) {
     if (typeof executor === "undefined") {
       throw new TypeError("Executor is undefined.");
     }
     if (typeof executor !== "function") {
-      throw new TypeError("Executor is not a function.");
+      throw new TypeError("Executor is not callable.");
     }
     this[InternalSlots.state] = "pending";
-    this[InternalSlots.result] = undefined;
-    this[InternalSlots.isHandled] = false;
     this[InternalSlots.fulfillReactions] = [];
     this[InternalSlots.rejectReactions] = [];
+    this[InternalSlots.isHandled] = false;
+    //
+    this[InternalSlots.result] = undefined;
+
     const { resolve, reject } = createResolvingFunctions(this);
     try {
       executor(resolve, reject);

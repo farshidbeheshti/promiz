@@ -8,13 +8,13 @@ describe("Promiz", () => {
         new TypeError("Executor is undefined.")
       );
     });
-    it("should throw an exception if the executor is not a function", () => {
-      expect(() => new Promiz(true)).toThrow(
-        new TypeError("Executor is not a function.")
+    it("should throw an exception if the executor is not callable", () => {
+      expect(() => new Promiz(" ")).toThrow(
+        new TypeError("Executor is not callable.")
       );
     });
 
-    it("should fulfill a promiz instance if the executor call resolve function", () => {
+    it("should fulfill a promiz instance if the executor calls resolve function", () => {
       const aValue = 1234;
       const promiz = new Promiz((resolve) => {
         resolve(aValue);

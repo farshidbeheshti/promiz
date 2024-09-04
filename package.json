@@ -13,6 +13,8 @@
     "url": "git+https://github.com/farshidbeheshti/promiz.git"
   },
   "keywords": [
+    "promiz",
+    "promize",
     "promise",
     "promisejs"
   ],

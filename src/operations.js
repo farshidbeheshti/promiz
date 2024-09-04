@@ -17,7 +17,7 @@ export function createResolvingFunctions(promise) {
     /* as 25.6.1.3.2-7: must not resolve to the same promise */
     if (Object.is(resolution, promise)) {
       const selfResolutionError = new TypeError(
-        "must not resolve to the same promise."
+        "must not resolve to the same promiz."
       );
       return rejectPromise(promise, selfResolutionError);
     }
