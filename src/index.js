@@ -166,7 +166,7 @@ export default class Promiz {
       }
 
       PromiseCapability.reject(result.value);
-      return PromiseCapability.Promise;
+      return PromiseCapability.promise;
     }
   }
 
@@ -264,22 +264,22 @@ function performPromiseThen(
     onRejected
   );
 
-  switch (Promise[InternalSlots.state]) {
+  switch (promise[InternalSlots.state]) {
     case "pending":
-      Promise[InternalSlots.fulfillReactions].push(fulfillReaction);
-      Promise[InternalSlots.rejectReactions].push(rejectReaction);
+      promise[InternalSlots.fulfillReactions].push(fulfillReaction);
+      promise[InternalSlots.rejectReactions].push(rejectReaction);
       break;
     case "fulfilled":
       {
-        const value = Promise[InternalSlots.result];
+        const value = promise[InternalSlots.result];
         const fulfillJob = new PromiseReactionJob(fulfillReaction, value);
         hostEnqueuePromiseJob(fulfillJob);
       }
       break;
     case "rejected":
       {
-        const reason = Promise[InternalSlots.result];
-        if (Promise[InternalSlots.isHandled] === false) {
+        const reason = promise[InternalSlots.result];
+        if (promise[InternalSlots.isHandled] === false) {
           hostPromiseRejectionTracker(promise, "handle");
         }
         const rejectJob = new PromiseReactionJob(rejectReaction, reason);
@@ -289,11 +289,11 @@ function performPromiseThen(
 
     default:
       throw new TypeError(
-        `Invalid promise state: ${Promise[InternalSlots.state]}.`
+        `Invalid promise state: ${promise[InternalSlots.state]}.`,
       );
   }
 
-  Promise[InternalSlots.isHandled] = true;
+  promise[InternalSlots.isHandled] = true;
 
   return resultCapability?.promise || undefined;
 }
@@ -715,23 +715,25 @@ export function getIterator(obj, kind) {
   if (kind !== "sync" && kind !== "async") {
     throw new TypeError("Invalid kind. It could be either 'sync' or 'async'");
   }
-  let method = getMethod(obj);
-  if (kind === "async") {
-    if (method === undefined) {
-      method = obj[Symbol.asyncIterator];
-      if (method === undefined) {
-        const syncMethod = obj[Symbol.iterator];
-        const syncIteratorRecord = getIteratorFromMethod(obj, syncMethod);
 
-        return syncIteratorRecord;
+  let method;
+
+  if (kind === "async") {
+    method = obj[Symbol.asyncIterator];
+    if (method === undefined) {
+      const syncMethod = obj[Symbol.iterator];
+      if (syncMethod === undefined) {
+        throw new TypeError("Object is not iterable");
       }
-    } else {
-      method = obj[Symbol.iterator];
+      const syncIteratorRecord = getIteratorFromMethod(obj, syncMethod);
+      return syncIteratorRecord;
     }
+  } else {
+    method = obj[Symbol.iterator];
   }
 
   if (method === undefined) {
-    throw new TypeError("Invalid method. method should not be undefined.");
+    throw new TypeError("Object is not iterable");
   }
 
   return getIteratorFromMethod(obj, method);
